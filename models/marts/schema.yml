@@ -1,0 +1,69 @@
+version: 2
+models:
+- name: fct_orders
+  description: 'Факт замовлень: один рядок на замовлення, включно зі способом оплати
+    й сумою. У поточних seeds кожне замовлення має один платіж.'
+  columns:
+  - name: order_id
+    description: Унікальний ідентифікатор замовлення.
+    data_tests: &id001
+    - not_null
+    - unique
+  - name: customer_id
+    description: Клієнт, який зробив замовлення.
+    data_tests:
+    - not_null
+    - relationships:
+        arguments:
+          to: ref('stg_customers')
+          field: customer_id
+  - name: order_date
+    description: Дата та час замовлення.
+    data_tests:
+    - not_null
+  - name: status
+    description: Статус замовлення.
+    data_tests:
+    - not_null
+    - accepted_values:
+        arguments:
+          values:
+          - completed
+          - returned
+          - placed
+          - shipped
+  - name: payment_method
+    description: Спосіб оплати замовлення.
+    data_tests:
+    - not_null
+  - name: amount
+    description: Сума платежу за замовлення в основних грошових одиницях.
+    data_tests:
+    - not_null
+- name: dim_customers
+  description: Усі клієнти та їхні агреговані метрики замовлень і Customer Lifetime
+    Value.
+  columns:
+  - name: customer_id
+    description: Унікальний ідентифікатор клієнта.
+    data_tests: *id001
+  - name: first_name
+    description: Ім’я клієнта.
+  - name: last_name
+    description: Прізвище клієнта.
+  - name: signup_date
+    description: Дата реєстрації клієнта.
+  - name: first_order_date
+    description: Дата першого замовлення незалежно від статусу; NULL за відсутності
+      замовлень.
+  - name: most_recent_order_date
+    description: Дата останнього замовлення незалежно від статусу; NULL за відсутності
+      замовлень.
+  - name: number_of_orders
+    description: Кількість усіх замовлень клієнта; 0 за відсутності замовлень.
+    data_tests:
+    - not_null
+  - name: total_lifetime_value
+    description: Сума лише completed замовлень; 0 за відсутності виконаних замовлень.
+    data_tests:
+    - not_null

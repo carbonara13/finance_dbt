@@ -1,0 +1,93 @@
+version: 2
+sources:
+- name: raw
+  schema: main
+  description: Сирі таблиці, завантажені командою dbt seed
+  tables:
+  - name: raw_customers
+    description: Сирі клієнти з seeds/raw_customers.csv.
+  - name: raw_orders
+    description: Сирі замовлення з seeds/raw_orders.csv.
+  - name: raw_payments
+    description: Сирі платежі в центах з seeds/raw_payments.csv.
+models:
+- name: stg_customers
+  description: Очищені клієнти з канонічними назвами полів і типом DATE.
+  columns:
+  - name: customer_id
+    description: Унікальний ідентифікатор клієнта.
+    data_tests: 
+    - not_null
+    - unique
+  - name: first_name
+    description: Ім’я клієнта.
+  - name: last_name
+    description: Прізвище клієнта.
+  - name: email
+    description: Email у нижньому регістрі; некоректні адреси з джерела збережено.
+  - name: signup_date
+    description: Дата реєстрації клієнта.
+- name: stg_orders
+  description: Очищені замовлення з датою типу TIMESTAMP.
+  columns:
+  - name: order_id
+    description: Унікальний ідентифікатор замовлення.
+    data_tests: 
+    - not_null
+    - unique
+  - name: customer_id
+    description: Клієнт, який зробив замовлення.
+    data_tests:
+    - not_null
+    - relationships:
+        arguments:
+          to: ref('stg_customers')
+          field: customer_id
+  - name: order_date
+    description: Дата та час замовлення.
+    data_tests:
+    - not_null
+  - name: status
+    description: Статус замовлення.
+    data_tests:
+    - not_null
+    - accepted_values:
+        arguments:
+          values:
+          - completed
+          - returned
+          - placed
+          - shipped
+- name: stg_payments
+  description: Очищені платежі з конвертацією центів макросом cents_to_dollars.
+  columns:
+  - name: payment_id
+    description: Унікальний ідентифікатор платежу.
+    data_tests: 
+    - not_null
+    - unique
+  - name: order_id
+    description: Замовлення, якому відповідає платіж; один платіж на замовлення у
+      цьому наборі даних.
+    data_tests:
+    - not_null
+    - unique
+    - relationships:
+        arguments:
+          to: ref('stg_orders')
+          field: order_id
+  - name: payment_method
+    description: Спосіб оплати.
+    data_tests:
+    - not_null
+    - accepted_values:
+        arguments:
+          values:
+          - credit_card
+          - coupon
+          - bank_transfer
+          - gift_card
+  - name: amount
+    description: Сума платежу в основних грошових одиницях, округлена до 2 знаків.
+    data_tests:
+    - not_null
